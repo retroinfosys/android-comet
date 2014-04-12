@@ -24,7 +24,7 @@ import android.content.Context;
 import com.memtrip.coment.network.HTTPRequest;
 import com.memtrip.coment.network.HTTPResponse;
 import com.memtrip.coment.network.HTTPSConnection;
-import com.memtrip.comet.asynctask.base.BaseAsyncTask;
+import com.memtrip.comet.asynctask.base.BaseCometTask;
 import com.memtrip.comet.asynctask.base.BaseResponse;
 import com.memtrip.comet.asynctask.base.IParam;
 
@@ -33,7 +33,7 @@ import com.memtrip.comet.asynctask.base.IParam;
  * server application that keeps the connection alive until a response is available.
  * @author samkirton
  */
-public class ConnectionAsyncTask extends BaseAsyncTask {
+public class ConnectionAsyncTask extends BaseCometTask {
 
 	public ConnectionAsyncTask(Context context) { super(context); }
 

@@ -20,11 +20,10 @@ import java.util.HashMap;
 
 import android.content.Context;
 
+import com.memtrip.comet.asynctask.CometParam;
 import com.memtrip.comet.asynctask.CometResponse;
 import com.memtrip.comet.asynctask.ConnectionAsyncTask;
-import com.memtrip.comet.asynctask.CometParam;
-import com.memtrip.comet.asynctask.base.BaseAsyncTask;
-import com.memtrip.comet.asynctask.base.BaseAsyncTask.CometAsyncCallback;
+import com.memtrip.comet.asynctask.base.BaseCometTask.CometAsyncCallback;
 import com.memtrip.comet.asynctask.base.BaseResponse;
 
 /**
@@ -48,6 +47,8 @@ public class CometProvider implements CometAsyncCallback {
 	private ConnectionAsyncTask mConnectionAsyncTask;
 	private CometCallback mCometCallback;
 	
+	private static final String REASON_CANCEL = "CANCELLED";
+	
 	/**
 	 * Receive the response of comet connections
 	 */
@@ -63,7 +64,7 @@ public class CometProvider implements CometAsyncCallback {
 		/**
 		 * The comet connection has been stopped
 		 */
-		public void onCometStopped();
+		public void onCometStopped(String reason);
 	}
 	
 	public void setCometCallback(CometCallback cometCallback) {
@@ -141,14 +142,21 @@ public class CometProvider implements CometAsyncCallback {
 	}
 	
 	@Override
-	public void onCometAsyncResponse(BaseResponse response, boolean cancelled, BaseAsyncTask asyncTask) {
+	public void onCometAsyncResponse(BaseResponse response, boolean cancelled) {
+		CometResponse cometResponse = (CometResponse)response;
+		
 		if (cancelled && mShouldRefresh) {
 			mShouldRefresh = false;
 			start();
 		} else if (cancelled) {
-			mCometCallback.onCometStopped();
+			mCometCallback.onCometStopped(REASON_CANCEL);
+		} else if (cometResponse.getHttpStatusCode() < 200 || cometResponse.getHttpStatusCode() > 299) {
+			String reason = null;
+			if (cometResponse.getData() != null) 
+				reason = new String(cometResponse.getData());
+			
+			mCometCallback.onCometStopped(reason);
 		} else {
-			CometResponse cometResponse = (CometResponse)response;
 			mCometCallback.onCometResponse(
 				cometResponse.getHttpStatusCode(),
 				cometResponse.getData(),

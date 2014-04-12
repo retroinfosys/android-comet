@@ -16,23 +16,24 @@
 
 package com.memtrip.comet.asynctask.base;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Build;
 
 /**
  * @author samkirton
  */
-public abstract class BaseAsyncTask extends AsyncTask<IParam, Void, BaseResponse>  {
+public abstract class BaseCometTask extends AsyncTask<IParam, Void, BaseResponse>  {
 	private Context mContext;
 	private CometAsyncCallback mCometAsyncCallback;
 	private BaseResponse mResult;
-	private BaseAsyncTask mInstanceRef;
 	private boolean mCancelled;
 	
 	public interface CometAsyncCallback {
-		public void onCometAsyncResponse(BaseResponse response, boolean cancelled, BaseAsyncTask asyncTask);
+		public void onCometAsyncResponse(BaseResponse response, boolean cancelled);
 	}
 	
 	/**
@@ -40,7 +41,7 @@ public abstract class BaseAsyncTask extends AsyncTask<IParam, Void, BaseResponse
 	 */
 	private Runnable doUpdateGUI = new Runnable() {
 		public void run() { 
-			mCometAsyncCallback.onCometAsyncResponse(mResult, mCancelled, mInstanceRef);
+			mCometAsyncCallback.onCometAsyncResponse(mResult, mCancelled);
 		} 
 	};
 	
@@ -56,7 +57,7 @@ public abstract class BaseAsyncTask extends AsyncTask<IParam, Void, BaseResponse
 	 * Constructor
 	 * @param	applicationContext	The application context
 	 */
-	public BaseAsyncTask(Context context) {
+	public BaseCometTask(Context context) {
 		if (!(context instanceof Activity) && !(context instanceof Service)) {
 			throw new IllegalArgumentException("The AsyncTask context must be able to cast into Activity or Service");
 		}
@@ -65,14 +66,19 @@ public abstract class BaseAsyncTask extends AsyncTask<IParam, Void, BaseResponse
 	}
 	
 	/**
-	 * An override of the AsyncTask execute method that takes a single
-	 * BaseContext param
-	 * @param	baseContext	The BaseContext to use as params
+	 * An override of the AsyncTask execute method that takes a single param
+	 * @param	param	The param to provide the task with
 	 */
+	@SuppressLint("NewApi")
 	public void execute(IParam param) {
 		IParam[] params = new IParam[1];
 		params[0] = param;
-		this.execute(params);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+		    this.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,params);
+		} else {
+		    this.execute(params);
+		}
 	}
 	
 	@Override
@@ -88,12 +94,11 @@ public abstract class BaseAsyncTask extends AsyncTask<IParam, Void, BaseResponse
 	@Override
 	protected void onPostExecute(BaseResponse result) {
 		mResult = result;
-		mInstanceRef = this;
 		
 		if (mContext instanceof Activity) {
 			((Activity)mContext).runOnUiThread(doUpdateGUI);
 		} else if (mContext instanceof Service) {
-			mCometAsyncCallback.onCometAsyncResponse(mResult,mCancelled, mInstanceRef);
+			mCometAsyncCallback.onCometAsyncResponse(mResult,mCancelled);
 		}
 	}
 	
