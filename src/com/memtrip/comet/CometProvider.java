@@ -107,16 +107,31 @@ public class CometProvider implements CometAsyncCallback {
 	/**
 	 * Start the comet request, the connection to the specified URL will keep
 	 * re-opening the connection until stop() is called
+	 * @param	timestamp	The timestamp of the last successful long poll
 	 */
-	public void start() {
+	public void start(String timestamp) {
 		CometParam param = new CometParam();
 		param.setData(mRequestData);
 		param.setUrl(mUrl);
+		
+		// add the timestamp header if it exists
+		if (timestamp != null) 
+			mHeaders.put("X-Timestamp", timestamp);
+			
 		param.setHeaders(mHeaders);
 		
 		mConnectionAsyncTask = new ConnectionAsyncTask(mContext);
 		mConnectionAsyncTask.setCometAsyncCallback(this);
 		mConnectionAsyncTask.execute(param);
+	}
+	
+	/**
+	 * An override of start() that assumes a timestamp is not available.
+	 * Start the comet request, the connection to the specified URL will keep
+	 * re-opening the connection until stop() is called
+	 */
+	public void start() {
+		start(null);
 	}
 	
 	/**
@@ -164,7 +179,7 @@ public class CometProvider implements CometAsyncCallback {
 			);
 			
 			// start the connection again
-			start();
+			start(cometResponse.getHeaders().get("X-Timestamp"));
 		}
 	}
 }
